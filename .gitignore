@@ -3,3 +3,11 @@
 *.layout
 bin/
 obj/
+
+.vs/
+*.user
+*.suo
+[Bb]in/
+[Oo]bj/
+*.sln
+*.vcxproj*
