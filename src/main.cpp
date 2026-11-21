@@ -1,7 +1,9 @@
 #include "main_control(1)/matrix_controller.h"
-
+#include "main_control(1)/error_codes.h"
+#include "memory_control(4)/memory_control.h"
 
 #include <iostream>
+#include <iomanip>
 //пока подключим сюда консольный вывод, пока нет интерфейса
 
 
@@ -9,37 +11,67 @@ int main()
 {
     MatrixController controller;
 
-    // пока интерфейса нет, вручную создадим entry
-    Entry entries[4];
-    entries[0] = {0, 0, 5.0};
-    entries[1] = {0, 3, -2.0};
-    entries[2] = {2, 1, 7.0};
-    entries[3] = {1, 0, 10.0};
-
     Matrix* matrix = nullptr;
-    // вызываем: построить матрицу из вручную введенных элементов
-    int result = controller.buildMatrix(5,5,4,entries,4,matrix);
+    // тест генерации
+    // вызываем: сгенерировать матрицу
+    //int result = controller.generateMatrix(5,5,2,matrix);
+
+    // тест ввода с клавиатуры
+    Entry entries[3];
+    entries[0] = {0, 2, 5.0};
+    entries[1] = {1, 2, -2.0};
+    entries[2] = {2, 1, 7.0};
+    int result = controller.buildMatrix(5,6,1,entries,3,matrix);
 
     // тут должна быть проверка на ошибку
 
-    std::cout << "start out\n";
 
-    // небольщой вывод (пока тут) - это тест
-    Colhead* col = matrix->first_col;
-    while (col != nullptr)
+    if (result == OK)
     {
-        std::cout << "col " << col->col+1 << ":";
-
-        Node* node = col->first_el;
-        while (node!=nullptr)
+            // небольшой вывод (пока тут) - это тест - ИИ
+        std::cout << std::fixed << std::setprecision(1);
+        for (int row = 0; row < matrix->rows; row++)
         {
-            std::cout << "row " << node->row + 1 << " (" << node->value << "), ";
-            node = node->next;
-        }
-        std::cout << "\n";
-        col = col->next;
+            Colhead* col = matrix->first_col;
 
+            for (int currentCol = 0; currentCol < matrix->cols; currentCol++)
+            {
+                double value = 0.0;
+
+                // Ищем нужный столбец
+                while (col != nullptr && col->col < currentCol)
+                {
+                    col = col->next;
+                }
+
+                // Если столбец существует, ищем нужную строку
+                if (col != nullptr && col->col == currentCol)
+                {
+                    Node* node = col->first_el;
+
+                    while (node != nullptr && node->row < row)
+                    {
+                        node = node->next;
+                    }
+
+                    if (node != nullptr && node->row == row)
+                    {
+                        value = node->value;
+                    }
+                }
+
+                std::cout << value << "\t";
+            }
+
+            std::cout << "\n";
+        }
+        deleteMatrix(matrix);
     }
+    else
+    {
+        std::cout << "error code: " << result << "\n";
+    }
+
 
     return 0;
 };

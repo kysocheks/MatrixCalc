@@ -9,4 +9,4 @@ int createMatrix(int rows, int cols, Matrix*& result);
 int insertElement(Matrix* matrix, int row, int col, double value);
 
 // удалить матрицу
-int deleteMatrix(Matrix*& matrix);
+void deleteMatrix(Matrix*& matrix);
