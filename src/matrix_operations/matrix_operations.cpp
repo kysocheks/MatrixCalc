@@ -219,3 +219,124 @@ int subtractMatrices(const Matrix* A, const Matrix* B, Matrix*& result)
 
     return OK;
 }
+
+int multiplyMatrices(const Matrix* A, const Matrix* B, Matrix*& result)
+{
+    if (A == nullptr || B == nullptr)
+    {
+        return INVALID_ARGUMENT;
+    }
+    if (A->cols != B->rows)
+    {
+        return INVALID_SIZE;
+    }
+
+    int code = createMatrix(A->rows, B->cols, result);
+    if (code != OK)
+    {
+        return code;
+    }
+
+    double* sums = new (std::nothrow) double[A->rows]; // массив для хранения сумм
+
+    Colhead** columnIndex = new (std::nothrow) Colhead * [A->cols]; // временный список указателей на ненулевые столбцы
+
+    // мб проверка какая-то созданных массивов нужна?
+
+    // инициализируем массив
+    for (int i = 0; i < A->cols; i++)
+    {
+        columnIndex[i] = nullptr;
+    }
+
+    // проходимся по столбцам матрицы A и добавляем ссылки первые эл-ты в список временный
+    Colhead* columnA = A->first_col;
+
+    while (columnA != nullptr)
+    {
+        columnIndex[columnA->col] = columnA;
+        columnA = columnA->next;
+    }
+
+
+    // Проходимся по столбцам матрицы B
+
+    Colhead* columnB = B->first_col;
+
+    while (columnB != nullptr)
+    {
+        // обнуляем суммы перед обходом нового столбца
+        for (int i = 0; i < A->rows; i++)
+        {
+            sums[i] = 0;
+        }
+
+
+        // проходка по столбцу
+        Node* nodeB = columnB->first_el;
+
+        // горизонатальный цикл (охватывает все столбцы)
+        while (nodeB != nullptr)
+        {
+            int k = nodeB->row;  // номер строки
+            double v = nodeB->value; // значение элемента
+
+            Colhead* currentColumnA = columnIndex[k]; // сразу получаем ссылку на нужный столбец BTW это оч круто да?
+
+            if (currentColumnA != nullptr)
+            {
+                Node* nodeA = currentColumnA->first_el;
+
+                while (nodeA != nullptr)
+                {
+                    int i = nodeA->row;
+
+                    double term = nodeA->value * v;
+
+                    // проверка получившегося произведения на корректность 
+                    if (!std::isfinite(term))
+                    {
+                        std::cout << "Ошибка в формировании результата.\n";
+                        // хз какой щас код ошибки ставить, у нас с ними не так что-то
+                    }
+
+                    sums[i] += term;
+
+                    // проверка получившейся суммы на корректность 
+                    if (!std::isfinite(sums[i]))
+                    {
+                        std::cout << "Ошибка в формировании результата.\n";
+                        // хз какой щас код ошибки ставить, у нас с ними не так что-то
+                    }
+
+                    nodeA = nodeA->next;
+                }
+            }
+
+            nodeB = nodeB->next;
+        }
+
+        // Записываем полученный столбец результата
+        for (int i = 0; i < A->rows; i++)
+        {
+            if (sums[i] != 0)
+            {
+                code = insertElement(result, i, columnB->col, sums[i]);
+
+                if (code != OK)
+                {
+                    std::cout << "Ошибка в встваке элемента в результирующий матрицу.\n";
+                }
+            }
+        }
+
+        columnB = columnB->next;
+
+    }
+
+    delete[] columnIndex;
+    delete[] sums;
+
+    return OK;
+}
+

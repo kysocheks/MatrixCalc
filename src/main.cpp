@@ -75,22 +75,111 @@ int main()
     }
 
 
-
-    // попытка сложения матриц
-    // сначала создаем две матрицы руками (А и В)
-
     std::cout << "\n";
     std::cout << "\n";
+
+ //   // СЛОЖЕНИЕ И ВЫЧИТАНИЕ
+
+ //   // A
+ //   Matrix* A = nullptr;
+
+ //   Entry entries_a[3];
+ //   entries_a[0] = { 0, 0, 1.5 };
+ //   entries_a[1] = { 0, 5, 7.8 };
+ //   entries_a[2] = { 2, 1, 5.6 };
+
+ //   int matrix_a = controller.buildMatrix(5, 6, 1, entries_a, 3, A);
+
+ //   if (matrix_a != OK)
+ //   {
+ //       std::cout << "Error creating matrix A: " << matrix_a << "\n";
+ //       return matrix_a;
+ //   }
+
+ //   // B
+
+ //   Matrix* B = nullptr;
+
+ //   Entry entries_b[3];
+ //   entries_b[0] = { 0, 0, 3.2 };
+ //   entries_b[1] = { 2, 2, 1.9 };
+ //   entries_b[2] = { 4, 4, 7.3 };
+
+ //   int matrix_b = controller.buildMatrix(5, 6, 1, entries_b, 3, B);
+
+ //   if (matrix_b != OK)
+ //   {
+ //       std::cout << "Error creating matrix B: " << matrix_b << "\n";
+ //       deleteMatrix(A);
+ //       return matrix_b;
+ //   }
+
+ //   // C
+
+ //   Matrix* C = nullptr;
+
+ //   int res = addMatrices(A, B, C);
+
+ //   if (res != OK)
+ //   {
+ //       std::cout << "Error adding matrices: " << res << "\n";
+ //       deleteMatrix(A);
+ //       deleteMatrix(B);
+ //       return res;
+ //   }
+
+	//// вывод спиздил сверху, надо сделать его отдельной функцией будет
+	//std::cout << std::fixed << std::setprecision(1);
+	//for (int row = 0; row < C->rows; row++)
+	//{
+	//	Colhead* col = C->first_col;
+
+	//	for (int currentCol = 0; currentCol < C->cols; currentCol++)
+	//	{
+	//		double value = 0.0;
+
+	//		// Ищем нужный столбец
+	//		while (col != nullptr && col->col < currentCol)
+	//		{
+	//			col = col->next;
+	//		}
+
+	//		// Если столбец существует, ищем нужную строку
+	//		if (col != nullptr && col->col == currentCol)
+	//		{
+	//			Node* node = col->first_el;
+
+	//			while (node != nullptr && node->row < row)
+	//			{
+	//				node = node->next;
+	//			}
+
+	//			if (node != nullptr && node->row == row)
+	//			{
+	//				value = node->value;
+	//			}
+	//		}
+
+	//		std::cout << value << "\t";
+	//	}
+
+	//	std::cout << "\n";
+	//}
+	//deleteMatrix(C);
+
+    // УМНОЖЕНИЕ
 
     // A
     Matrix* A = nullptr;
 
-    Entry entries_a[3];
-    entries_a[0] = { 0, 0, 1.5 };
-    entries_a[1] = { 0, 5, 7.8 };
-    entries_a[2] = { 2, 1, 5.6 };
+    Entry entries_a[5];
+    entries_a[0] = { 0, 4, 6.7 };
+    entries_a[1] = { 1, 1, 3.4 };
+    entries_a[2] = { 2, 6, 5.1 };
+    entries_a[3] = { 4, 0, 0.1 };
+    entries_a[4] = { 5, 3, -2 };
 
-    int matrix_a = controller.buildMatrix(5, 6, 1, entries_a, 3, A);
+    int matrix_a = controller.buildMatrix(7, 8, 5, entries_a, 5, A);
 
     if (matrix_a != OK)
     {
@@ -102,12 +191,13 @@ int main()
 
     Matrix* B = nullptr;
 
-    Entry entries_b[3];
-    entries_b[0] = { 0, 0, 3.2 };
-    entries_b[1] = { 2, 2, 1.9 };
-    entries_b[2] = { 4, 4, 7.3 };
+    Entry entries_b[4];
+    entries_b[0] = { 0, 3, 4.2 };
+    entries_b[1] = { 1, 0, -0.64 };
+    entries_b[2] = { 3, 2, -2 };
+    entries_b[3] = { 5, 4, 6.1 };
 
-    int matrix_b = controller.buildMatrix(5, 6, 1, entries_b, 3, B);
+    int matrix_b = controller.buildMatrix(8, 6, 4, entries_b, 4, B);
 
     if (matrix_b != OK)
     {
@@ -120,7 +210,7 @@ int main()
 
     Matrix* C = nullptr;
 
-    int res = addMatrices(A, B, C);
+    int res = multiplyMatrices(A, B, C);
 
     if (res != OK)
     {
@@ -130,44 +220,46 @@ int main()
         return res;
     }
 
-	// вывод спиздил сверху, надо сделать его отдельной функцией будет
-	std::cout << std::fixed << std::setprecision(1);
-	for (int row = 0; row < C->rows; row++)
-	{
-		Colhead* col = C->first_col;
+    // вывод спиздил сверху, надо сделать его отдельной функцией будет
+    std::cout << std::fixed << std::setprecision(3);
+    for (int row = 0; row < C->rows; row++)
+    {
+        Colhead* col = C->first_col;
 
-		for (int currentCol = 0; currentCol < C->cols; currentCol++)
-		{
-			double value = 0.0;
+        for (int currentCol = 0; currentCol < C->cols; currentCol++)
+        {
+            double value = 0.0;
 
-			// Ищем нужный столбец
-			while (col != nullptr && col->col < currentCol)
-			{
-				col = col->next;
-			}
+            // Ищем нужный столбец
+            while (col != nullptr && col->col < currentCol)
+            {
+                col = col->next;
+            }
 
-			// Если столбец существует, ищем нужную строку
-			if (col != nullptr && col->col == currentCol)
-			{
-				Node* node = col->first_el;
+            // Если столбец существует, ищем нужную строку
+            if (col != nullptr && col->col == currentCol)
+            {
+                Node* node = col->first_el;
 
-				while (node != nullptr && node->row < row)
-				{
-					node = node->next;
-				}
+                while (node != nullptr && node->row < row)
+                {
+                    node = node->next;
+                }
 
-				if (node != nullptr && node->row == row)
-				{
-					value = node->value;
-				}
-			}
+                if (node != nullptr && node->row == row)
+                {
+                    value = node->value;
+                }
+            }
 
-			std::cout << value << "\t";
-		}
+            std::cout << value << "\t";
+        }
 
-		std::cout << "\n";
-	}
-	deleteMatrix(C);
+        std::cout << "\n";
+    }
+    deleteMatrix(C);
+
+
 
 
 
