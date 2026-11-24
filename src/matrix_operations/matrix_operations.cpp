@@ -361,17 +361,17 @@ int subtractMatrices(const Matrix* A, const Matrix* B, Matrix*& result)
     {
         return INVALID_SIZE;
     }
-
-    int code = createMatrix(A->rows, A->cols, result);
+    Matrix* temp = nullptr;
+    int code = createMatrix(A->rows, A->cols, temp);
     if (code != OK)
     {
         return code;
     }
-
+   
     Colhead* colA = A->first_col;
     Colhead* colB = B->first_col;
 
-    while (colA != nullptr || colB != nullptr)
+    while ((colA != nullptr || colB != nullptr) && code == OK)
     {
         int currentCol;
         Node* nodeA = nullptr;
@@ -383,7 +383,7 @@ int subtractMatrices(const Matrix* A, const Matrix* B, Matrix*& result)
             nodeA = colA->first_el;
             colA = colA->next;
         }
-        else if (colA == nullptr || (colB != nullptr && colB->col < colA->col))
+        else if (colA == nullptr || colB->col < colA->col)
         {
             currentCol = colB->col;
             nodeB = colB->first_el;
@@ -399,62 +399,62 @@ int subtractMatrices(const Matrix* A, const Matrix* B, Matrix*& result)
 
         }
 
-        while (nodeA != nullptr || nodeB != nullptr)
+        while ((nodeA != nullptr || nodeB != nullptr) && code == OK)
         {
             int currentRow;
-            double sum;
+            double difference;
 
             if (nodeA == nullptr)
             {
                 currentRow = nodeB->row;
-                sum = nodeB->value;
+                difference = nodeB->value;
                 nodeB = nodeB->next;
             }
             else if (nodeB == nullptr)
             {
                 currentRow = nodeA->row;
-                sum = nodeA->value;
+                difference = nodeA->value;
                 nodeA = nodeA->next;
             }
             else if (nodeA->row < nodeB->row)
             {
                 currentRow = nodeB->row;
-                sum = nodeB->value;
+                difference = nodeB->value;
                 nodeB = nodeB->next;
             }
             else if (nodeB->row < nodeA->row)
             {
                 currentRow = nodeA->row;
-                sum = nodeA->value;
+                difference = nodeA->value;
                 nodeA = nodeA->next;
             }
             else
             {
                 currentRow = nodeA->row;
-                sum = nodeA->value - nodeB->value;
+                difference = nodeA->value - nodeB->value;
 
                 nodeA = nodeA->next;
                 nodeB = nodeB->next;
             }
 
-            if (sum != 0.0)
+            if (difference != 0.0)
             {
-                code = insertElement(result, currentRow, currentCol, sum);
-
-                if (code != OK)
-                {
-                    deleteMatrix(result);
-                    result = nullptr;
-                    return code;
-                }
+             
+                code = insertElement(temp, currentRow, currentCol, difference);
             }
 
 
-            // тут надо добавить проверку на sum = 0
-            // удалять элемент из результирующей матрицы в таком случае
+           
         }
 
     }
+    if (code != OK)
+    {
+        deleteMatrix(result);
+        result = nullptr;
+        return code;
+    }
+    result = temp;
 
     return OK;
 }
@@ -480,6 +480,16 @@ int multiplyMatrices(const Matrix* A, const Matrix* B, Matrix*& result)
 
     Colhead** columnIndex = new (std::nothrow) Colhead * [A->cols]; // временный список указателей на ненулевые столбцы
 
+    // ПРОВЕРКА
+    if (sums == nullptr || columnIndex == nullptr)
+    {
+        delete[] sums;
+        delete[] columnIndex;
+        deleteMatrix(result);
+        result = nullptr;
+        return MEMORY_ERROR;
+    }
+
     // мб проверка какая-то созданных массивов нужна?
 
     // инициализируем массив
@@ -502,7 +512,7 @@ int multiplyMatrices(const Matrix* A, const Matrix* B, Matrix*& result)
 
     Colhead* columnB = B->first_col;
 
-    while (columnB != nullptr)
+    while (columnB != nullptr && code == OK)
     {
         // обнуляем суммы перед обходом нового столбца
         for (int i = 0; i < A->rows; i++)
@@ -556,16 +566,12 @@ int multiplyMatrices(const Matrix* A, const Matrix* B, Matrix*& result)
         }
 
         // Записываем полученный столбец результата
-        for (int i = 0; i < A->rows; i++)
+        for (int i = 0; i < A->rows && code == OK; i++)
         {
             if (sums[i] != 0)
             {
                 code = insertElement(result, i, columnB->col, sums[i]);
 
-                if (code != OK)
-                {
-                    std::cout << "Ошибка в встваке элемента в результирующий матрицу.\n";
-                }
             }
         }
 
@@ -576,6 +582,13 @@ int multiplyMatrices(const Matrix* A, const Matrix* B, Matrix*& result)
     delete[] columnIndex;
     delete[] sums;
 
+    if (code != OK)
+    {
+        deleteMatrix(result);
+        result = nullptr;
+        return code;
+    }
+    
     return OK;
 }
 

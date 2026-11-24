@@ -192,7 +192,7 @@ int MatrixController::loadMatrixFromFile(
         {
             // проверка значений: строка столбец
             if (rows < 1 || rows > 100000 ||
-                cols < 1 || rows > 100000)
+                cols < 1 || cols > 100000)
             {
                 code = INVALID_SIZE;
             }
