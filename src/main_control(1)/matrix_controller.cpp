@@ -4,6 +4,10 @@
 
 #include <iostream>
 #include <random>
+#include <fstream>
+
+// временно
+#include "progress.h"
 
 // эти функции уже вызываются интерфейсом, которому я бы не доверял
 // мало ли что пользователь введет и интерфейс это пропустит
@@ -48,7 +52,7 @@ int MatrixController::buildMatrix(
             while (i<count && code == OK) // вставляем только пока все без ошибок
             {
                 if (entries[i].col < 0 || entries[i].col > matrix->cols ||
-                    entries[i].row < 0 || entries[i].row > matrix->cols)
+                    entries[i].row < 0 || entries[i].row > matrix->rows)
                 {
                     code = INVALID_SIZE; // наверное стоит другой написать, новый на индексы
                 }
@@ -137,8 +141,8 @@ int MatrixController::generateMatrix(
                 double value = valueDist(gen);
 
                 int insertCode = insertElement(matrix, row, col, value);
-
-                if (insertCode == OK) {already_generated++;}
+                // + временный вывод прогресса
+                if (insertCode == OK) {already_generated++;printProgress("[Генерация]",already_generated,count);}
                 else if (insertCode == DUPLICATE_ELEMENT) {} // это нормально
                 else {code = insertCode;}    // какая либо другая ошибка
             }
@@ -155,4 +159,60 @@ int MatrixController::generateMatrix(
         result = matrix;
     }
     return code;
+}
+
+
+
+int MatrixController::loadMatrixFromFile(
+    const std::string& filename,
+    Matrix*& result
+)
+{
+    int code = OK;
+    result = nullptr;
+
+    std::ifstream file;
+    // открываем
+    file.open(filename);
+    if (!file.is_open())
+    {
+        code = IMPORT_ERROR;
+    }
+    else
+    {
+        int rows, cols;
+        long long expected;
+
+        // удалось ли считать 3 первых значения
+        if (!(file >> rows >> cols >> expected))
+        {
+            code = INVALID_FILETYPE;
+        }
+        else //  прочли. теперь проверить эти значения
+        {
+            // проверка значений: строка столбец
+            if (rows < 1 || rows > 100000 ||
+                cols < 1 || rows > 100000)
+            {
+                code = INVALID_SIZE;
+            }
+            else // проверка значений: кол-во ненулевых эл.
+            {
+                long long total = static_cast<long long>(rows) * cols / 10;
+                if (expected < 0 || expected > total)
+                {
+                    code = INVALID_SIZE;
+                }
+                else
+                {
+                    // значения первой строки верны. передаем управление блоку памяти.
+                    // с верными значениями
+                    code = loadMatrixDirect(rows, cols, expected, file, result);
+                }
+            }
+        }
+    }
+
+    return code;
+
 }

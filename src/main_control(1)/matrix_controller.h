@@ -1,5 +1,6 @@
 #include "matrix.h"
 
+#include <string>
 
 class MatrixController
 {
@@ -9,7 +10,8 @@ public:
         int cols,
         long long expected,
         const Entry* entries,
-        long long count, Matrix*& result
+        long long count,
+        Matrix*& result
     );
 
     int generateMatrix(
@@ -19,4 +21,8 @@ public:
         Matrix*& result
     );
 
+    int loadMatrixFromFile(
+        const std::string& filename,
+        Matrix*& result
+    );
 };

@@ -3,114 +3,353 @@
 #include "../memory_control(4)/memory_control.h"
 
 #include <iostream>
+#include <cmath>
+
+// временно
+#include "../main_control(1)/progress.h"
+/*
+int addMatrices(const Matrix* A, const Matrix* B, Matrix*& result)
+{
+    int code = OK;
+    result = nullptr;
+
+    // Проверка входных данных
+    if (A == nullptr || B == nullptr)
+    {
+        code = INVALID_ARGUMENT;
+    }
+    else if (A->rows != B->rows || A->cols != B->cols)
+    {
+        code = INVALID_SIZE;
+    }
+    else
+    {
+        // Создание результирующей матрицы
+        code = createMatrix(A->rows, A->cols, result);
+
+        if (code == OK)
+        {
+            Colhead* colA = A->first_col;
+            Colhead* colB = B->first_col;
+
+            while ((colA != nullptr || colB != nullptr) && code == OK)
+            {
+                int currentCol;
+                Node* nodeA = nullptr;
+                Node* nodeB = nullptr;
+
+                // Выбираем текущий столбец
+                if (colB == nullptr ||
+                    (colA != nullptr && colA->col < colB->col))
+                {
+                    // Столбец есть только в A
+                    currentCol = colA->col;
+                    nodeA = colA->first_el;
+
+                    colA = colA->next;
+                }
+                else if (colA == nullptr ||
+                         (colB != nullptr && colB->col < colA->col))
+                {
+                    // Столбец есть только в B
+                    currentCol = colB->col;
+                    nodeB = colB->first_el;
+
+                    colB = colB->next;
+                }
+                else
+                {
+                    // Столбец есть и в A, и в B
+                    currentCol = colA->col;
+
+                    nodeA = colA->first_el;
+                    nodeB = colB->first_el;
+
+                    colA = colA->next;
+                    colB = colB->next;
+                }
+
+                // Обрабатываем элементы выбранного столбца
+                while ((nodeA != nullptr || nodeB != nullptr) &&
+                       code == OK)
+                {
+                    int currentRow;
+                    double sum;
+
+                    if (nodeA == nullptr)
+                    {
+                        // Элемент есть только в B
+                        currentRow = nodeB->row;
+                        sum = nodeB->value;
+
+                        nodeB = nodeB->next;
+                    }
+                    else if (nodeB == nullptr)
+                    {
+                        // Элемент есть только в A
+                        currentRow = nodeA->row;
+                        sum = nodeA->value;
+
+                        nodeA = nodeA->next;
+                    }
+                    else if (nodeA->row < nodeB->row)
+                    {
+                        // Элемент есть только в A
+                        currentRow = nodeA->row;
+                        sum = nodeA->value;
+
+                        nodeA = nodeA->next;
+                    }
+                    else if (nodeB->row < nodeA->row)
+                    {
+                        // Элемент есть только в B
+                        currentRow = nodeB->row;
+                        sum = nodeB->value;
+
+                        nodeB = nodeB->next;
+                    }
+                    else
+                    {
+                        // Элемент есть и в A, и в B
+                        currentRow = nodeA->row;
+                        sum = nodeA->value + nodeB->value;
+
+                        nodeA = nodeA->next;
+                        nodeB = nodeB->next;
+                    }
+
+                    // Нулевые элементы в разреженной матрице не храним
+                    if (sum != 0.0)
+                    {
+                        code = insertElement(
+                            result,
+                            currentRow,
+                            currentCol,
+                            sum
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    // Если произошла ошибка — удаляем частично созданную матрицу
+    if (code != OK)
+    {
+        deleteMatrix(result);
+        result = nullptr;
+    }
+
+    return code;
+}
+*/
 
 int addMatrices(const Matrix* A, const Matrix* B, Matrix*& result)
 {
+    int code = OK;
+    result = nullptr;
+
+    // Проверка входных данных
     if (A == nullptr || B == nullptr)
     {
-        return INVALID_ARGUMENT;
+        code = INVALID_ARGUMENT;
     }
-    if (A->rows != B->rows || A->cols != B->cols)
+    else if (A->rows != B->rows || A->cols != B->cols)
     {
-        return INVALID_SIZE;
+        code = INVALID_SIZE;
     }
-
-    int code = createMatrix(A->rows, A->cols, result);
-    if (code != OK)
+    else
     {
-        return code;
-    }
+        std::cout << "[Сложение] Начало..." << std::endl;
 
-    Colhead* colA = A->first_col;
-    Colhead* colB = B->first_col;
+        // Создание результирующей матрицы
+        code = createMatrix(A->rows, A->cols, result);
 
-    while (colA != nullptr || colB != nullptr)
-    {
-        int currentCol;
-        Node* nodeA = nullptr;
-        Node* nodeB = nullptr;
-        // если столбец в A меньше чем в B, то берем столбец из A, иначе из B, если они равны, то берем оба
-        if (colB == nullptr || (colA != nullptr && colA->col < colB->col))
+        if (code == OK)
         {
-            currentCol = colA->col;
-            nodeA = colA->first_el;
-            colA = colA->next;
-        }
-        else if (colA == nullptr || (colB != nullptr && colB->col < colA->col))
-        {
-            currentCol = colB->col;
-            nodeB = colB->first_el;
-            colB = colB->next;
-        }
-        else
-        {
-            currentCol = colA->col;
-            nodeA = colA->first_el;
-            nodeB = colB->first_el;
-            colA = colA->next;
-            colB = colB->next;
+            /*
+             * Сначала определяем точное количество
+             * непустых столбцов, которые будут обработаны.
+             */
+            long long totalCols = 0;
 
-        }
+            Colhead* tempA = A->first_col;
+            Colhead* tempB = B->first_col;
 
-        while (nodeA != nullptr || nodeB != nullptr)
-        {
-            int currentRow;
-            double sum;
+            while (tempA != nullptr || tempB != nullptr)
+            {
+                totalCols++;
 
-            if (nodeA == nullptr)
-            {
-                currentRow = nodeB->row;
-                sum = nodeB->value;
-                nodeB = nodeB->next;
-            }
-            else if (nodeB == nullptr)
-            {
-                currentRow = nodeA->row;
-                sum = nodeA->value;
-                nodeA = nodeA->next;
-            }
-            else if (nodeA->row < nodeB->row)
-            {
-                currentRow = nodeB->row;
-                sum = nodeB->value;
-                nodeB = nodeB->next;
-            }
-            else if (nodeB->row < nodeA->row)
-            {
-                currentRow = nodeA->row;
-                sum = nodeA->value;
-                nodeA = nodeA->next;
-            }
-            else
-            {
-                currentRow = nodeA->row;
-                sum = nodeA->value + nodeB->value;
-
-                nodeA = nodeA->next;
-                nodeB = nodeB->next;
-            }
-
-            if (sum != 0.0)
-            {
-                code = insertElement(result, currentRow, currentCol, sum);
-
-                if (code != OK)
+                if (tempB == nullptr ||
+                    (tempA != nullptr && tempA->col < tempB->col))
                 {
-                    deleteMatrix(result);
-                    result = nullptr;
-                    return code;
+                    tempA = tempA->next;
+                }
+                else if (tempA == nullptr ||
+                         (tempB != nullptr && tempB->col < tempA->col))
+                {
+                    tempB = tempB->next;
+                }
+                else
+                {
+                    // Столбец есть и в A, и в B
+                    tempA = tempA->next;
+                    tempB = tempB->next;
                 }
             }
 
+            std::cout << "[Сложение] Непустых столбцов: "
+                      << totalCols << std::endl;
 
-            // тут надо добавить проверку на sum = 0
-            // удалять элемент из результирующей матрицы в таком случае 
+            Colhead* colA = A->first_col;
+            Colhead* colB = B->first_col;
+
+            long long processedCols = 0;
+
+            // Обновляем прогресс примерно 100 раз
+            long long progressStep =
+                std::max(1LL, totalCols / 100);
+
+            while ((colA != nullptr || colB != nullptr) &&
+                   code == OK)
+            {
+                int currentCol;
+                Node* nodeA = nullptr;
+                Node* nodeB = nullptr;
+
+                // Выбираем текущий столбец
+                if (colB == nullptr ||
+                    (colA != nullptr && colA->col < colB->col))
+                {
+                    // Столбец есть только в A
+                    currentCol = colA->col;
+                    nodeA = colA->first_el;
+
+                    colA = colA->next;
+                }
+                else if (colA == nullptr ||
+                         (colB != nullptr && colB->col < colA->col))
+                {
+                    // Столбец есть только в B
+                    currentCol = colB->col;
+                    nodeB = colB->first_el;
+
+                    colB = colB->next;
+                }
+                else
+                {
+                    // Столбец есть и в A, и в B
+                    currentCol = colA->col;
+
+                    nodeA = colA->first_el;
+                    nodeB = colB->first_el;
+
+                    colA = colA->next;
+                    colB = colB->next;
+                }
+
+                // Обрабатываем элементы выбранного столбца
+                while ((nodeA != nullptr || nodeB != nullptr) &&
+                       code == OK)
+                {
+                    int currentRow;
+                    double sum;
+
+                    if (nodeA == nullptr)
+                    {
+                        // Элемент есть только в B
+                        currentRow = nodeB->row;
+                        sum = nodeB->value;
+
+                        nodeB = nodeB->next;
+                    }
+                    else if (nodeB == nullptr)
+                    {
+                        // Элемент есть только в A
+                        currentRow = nodeA->row;
+                        sum = nodeA->value;
+
+                        nodeA = nodeA->next;
+                    }
+                    else if (nodeA->row < nodeB->row)
+                    {
+                        // Элемент есть только в A
+                        currentRow = nodeA->row;
+                        sum = nodeA->value;
+
+                        nodeA = nodeA->next;
+                    }
+                    else if (nodeB->row < nodeA->row)
+                    {
+                        // Элемент есть только в B
+                        currentRow = nodeB->row;
+                        sum = nodeB->value;
+
+                        nodeB = nodeB->next;
+                    }
+                    else
+                    {
+                        // Элемент есть и в A, и в B
+                        currentRow = nodeA->row;
+                        sum = nodeA->value + nodeB->value;
+
+                        nodeA = nodeA->next;
+                        nodeB = nodeB->next;
+                    }
+
+                    // Нулевые элементы в разреженной матрице не храним
+                    if (sum != 0.0)
+                    {
+                        code = insertElement(
+                            result,
+                            currentRow,
+                            currentCol,
+                            sum
+                        );
+                    }
+                }
+
+                // Текущий столбец полностью обработан
+                processedCols++;
+
+                if (processedCols % progressStep == 0 ||
+                    processedCols == totalCols)
+                {
+                    printProgress(
+                        "[Сложение]",
+                        processedCols,
+                        totalCols
+                    );
+                }
+            }
+
+            // Переход на новую строку после прогресса
+            if (totalCols > 0)
+            {
+                std::cout << std::endl;
+            }
         }
-
     }
 
-    return OK;
+    // Если произошла ошибка — удаляем частично созданную матрицу
+    if (code != OK)
+    {
+        deleteMatrix(result);
+        result = nullptr;
+
+        std::cout << "[Сложение] Ошибка. Код: "
+                  << code
+                  << std::endl;
+    }
+    else
+    {
+        std::cout << "[Сложение] Завершено."
+                  << std::endl;
+    }
+
+    return code;
 }
+
 
 int subtractMatrices(const Matrix* A, const Matrix* B, Matrix*& result)
 {
@@ -212,7 +451,7 @@ int subtractMatrices(const Matrix* A, const Matrix* B, Matrix*& result)
 
 
             // тут надо добавить проверку на sum = 0
-            // удалять элемент из результирующей матрицы в таком случае 
+            // удалять элемент из результирующей матрицы в таком случае
         }
 
     }
@@ -293,7 +532,7 @@ int multiplyMatrices(const Matrix* A, const Matrix* B, Matrix*& result)
 
                     double term = nodeA->value * v;
 
-                    // проверка получившегося произведения на корректность 
+                    // проверка получившегося произведения на корректность
                     if (!std::isfinite(term))
                     {
                         std::cout << "Ошибка в формировании результата.\n";
@@ -302,7 +541,7 @@ int multiplyMatrices(const Matrix* A, const Matrix* B, Matrix*& result)
 
                     sums[i] += term;
 
-                    // проверка получившейся суммы на корректность 
+                    // проверка получившейся суммы на корректность
                     if (!std::isfinite(sums[i]))
                     {
                         std::cout << "Ошибка в формировании результата.\n";

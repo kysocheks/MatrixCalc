@@ -3,7 +3,8 @@
 
 #include <new>
 
-
+#include <string>
+#include <sstream>
 
 
 // и вообще этот алгоритм надо обязательно оптимизировать
@@ -160,4 +161,256 @@ void deleteMatrix(Matrix*& matrix)
         delete matrix;
         matrix = nullptr;
     }
+}
+
+int loadMatrixDirect(
+    int rows,
+    int cols,
+    long long expected,
+    std::ifstream& file,
+    Matrix*& result
+)
+{
+    int code = OK;
+    result = nullptr;
+
+    Matrix* matrix = nullptr;
+
+    // Первый этап. Создать пустую матрицу
+    int createCode = createMatrix(
+        rows,
+        cols,
+        matrix
+    );
+
+    if (createCode != OK)
+    {
+        code = createCode;
+    }
+    else
+    {
+        Colhead* lastCol = nullptr; // указатель на последний столбец
+        int prevCol = -1;            // предыдущий столбец
+        long long loaded = 0;        // сколько реально загрузили
+
+        std::string line;
+
+        //---------------- Читаем файл построчно.  --------------------
+        // Одна строка = один столбец.
+        while (code == OK &&
+               std::getline(file, line))
+        {
+            if (line.empty())
+            {
+                // Пропускаем пустую строку
+            }
+            else
+            {
+                // Поток для чтения текущей строки
+                std::stringstream lineStream(line);
+
+                int fileCol;
+
+                // Считываем первое значение строки — столбец
+                if (!(lineStream >> fileCol))
+                {
+                    code = INVALID_FILETYPE;
+                }
+                else if (fileCol < 1 || fileCol > cols)
+                {
+                    code = INVALID_SIZE;
+                }
+                else
+                {
+                    // В файле индексы с 1, в памяти с 0
+                    int col = fileCol - 1;
+
+                    // Файл должен быть отсортирован по столбцам
+                    if (col <= prevCol)
+                    {
+                        code = INVALID_FILETYPE;
+                    }
+                    else
+                    {
+                        // Создаём новый столбец
+                        Colhead* newCol =
+                            new (std::nothrow) Colhead;
+
+                        if (newCol == nullptr)
+                        {
+                            code = MEMORY_ERROR;
+                        }
+                        else
+                        {
+                            // Создаём структуру столбца
+                            newCol->col = col;
+                            newCol->first_el = nullptr;
+                            newCol->next = nullptr;
+
+                            // Вставка столбца в матрицу
+                            if (matrix->first_col == nullptr)
+                            {
+                                // Первый столбец
+                                matrix->first_col = newCol;
+                            }
+                            else
+                            {
+                                // Добавляем в конец
+                                lastCol->next = newCol;
+                            }
+
+                            // Запоминаем последний столбец
+                            lastCol = newCol;
+
+                            // Работа с элементами текущего столбца
+                            Node* lastNode = nullptr;
+
+                            // Предыдущая строка
+                            int prevRow = -1;
+
+                            // Читаем пары:
+                            // строка значение
+                            while (code == OK) // --------- работа с элементами столбца ---
+                            {
+                                int fileRow;
+                                double value;
+
+                                // Если пары закончились,
+                                // переходим к следующему столбцу
+                                if (!(lineStream >> fileRow))
+                                {
+                                    break;
+                                }
+
+                                // После строки обязательно
+                                // должно идти значение
+                                if (!(lineStream >> value))
+                                {
+                                    code = INVALID_FILETYPE;
+                                }
+                                else if (fileRow < 1 ||
+                                         fileRow > rows)
+                                {
+                                    code = INVALID_SIZE;
+                                }
+                                else
+                                {
+                                    // В файле с 1, в памяти с 0
+                                    int row = fileRow - 1;
+
+                                    // Строки должны быть отсортированы
+                                    if (row <= prevRow)
+                                    {
+                                        code = INVALID_FILETYPE;
+                                    }
+                                    else
+                                    {
+                                        // Создаём новый элемент
+                                        Node* newNode =
+                                            new (std::nothrow) Node;
+
+                                        if (newNode == nullptr)
+                                        {
+                                            code = MEMORY_ERROR;
+                                        }
+                                        else
+                                        {
+                                            newNode->row = row;
+                                            newNode->value = value;
+                                            newNode->next = nullptr;
+
+                                            // Первый элемент столбца
+                                            if (newCol->first_el == nullptr)
+                                            {
+                                                newCol->first_el = newNode;
+                                            }
+                                            else
+                                            {
+                                                // Добавляем в конец
+                                                lastNode->next = newNode;
+                                            }
+
+                                            // Запоминаем последний элемент
+                                            lastNode = newNode;
+
+                                            // Запоминаем строку
+                                            // для следующей проверки
+                                            prevRow = row;
+
+                                            // Увеличиваем количество
+                                            loaded++;
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Работа со строкой завершена.
+                            // В каждом столбце должен быть
+                            // хотя бы один элемент.
+                            if (code == OK &&
+                                newCol->first_el == nullptr)
+                            {
+                                code = INVALID_FILETYPE;
+                            }
+
+                            // Запоминаем столбец для следующей
+                            // проверки сортировки
+                            prevCol = col;
+                        }
+                    }
+                }
+
+                // После последней пары "строка значение"
+                // не должно остаться лишних данных.
+                //
+                // Например:
+                // 1 2 5 3 7 piu piu
+                //
+                // является ошибкой.
+                if (code == OK)
+                {
+                    lineStream >> std::ws;
+
+                    if (!lineStream.eof())
+                    {
+                        code = INVALID_FILETYPE;
+                    }
+                }
+            }
+        }
+
+        // ---------------- ЧТЕНИЕ ЗАВЕРШЕНО -----------
+        // Если чтение завершилось не из-за EOF,
+        // значит произошла ошибка чтения.
+        if (code == OK &&
+            !file.eof())
+        {
+            code = IMPORT_ERROR;
+        }
+
+        // Количество считанных элементов должно
+        // совпадать с количеством из заголовка.
+        if (code == OK &&
+            loaded != expected)
+        {
+            code = INVALID_FILETYPE;
+        }
+
+        // Если всё прошло успешно,
+        // передаём матрицу наружу.
+        if (code == OK)
+        {
+            matrix->nonZeroCount = loaded;
+            result = matrix;
+        }
+    }
+
+    // При любой ошибке удаляем частично
+    // созданную матрицу.
+    if (code != OK)
+    {
+        deleteMatrix(matrix);
+    }
+
+    return code;
 }
